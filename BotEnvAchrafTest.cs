@@ -61,6 +61,7 @@ namespace BotEnvAchrafTest
 
 
             _dialogs.Add(new WhenNextDialog("whenNextIntent", UserSelectionsState));
+            _dialogs.Add(new SetTimezoneDialog("setTimezoneIntent", UserSelectionsState));
             _dialogs.Add(new WaterfallDialog("dummy", dummySteps));
 
             //_dialogs.Add(new TextPrompt("User-name"));
@@ -79,6 +80,13 @@ namespace BotEnvAchrafTest
                 var results = await dialogContext.ContinueDialogAsync(cancellationToken);
 
                 var channelData = JObject.Parse(turnContext.Activity.ChannelData.ToString());
+
+                if (channelData.ContainsKey("postBack"))
+                {
+                    // This is from an adaptive card postback
+                    var activity = turnContext.Activity;
+                    activity.Text = activity.Value.ToString();
+                }
 
                 var userChoice = turnContext.Activity.Text;
                 var responseMessage = $"You chose: '{turnContext.Activity.Text}'\n";
@@ -101,7 +109,7 @@ namespace BotEnvAchrafTest
                                     await dialogContext.BeginDialogAsync("dummy", null, cancellationToken);
                                     break;
                                 case "4":
-                                    await dialogContext.BeginDialogAsync("dummy", null, cancellationToken);
+                                    await dialogContext.BeginDialogAsync("setTimezoneIntent", null, cancellationToken);
                                     break;
                                 default:
                                     await turnContext.SendActivityAsync("Please select a menu option");
