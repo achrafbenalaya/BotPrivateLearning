@@ -225,13 +225,36 @@ namespace BotEnvAchrafTest
 
 
 
+        ////simple prompt Menu 
+        //private static async Task DisplayMainMenuAsync(ITurnContext turnContext, CancellationToken cancellationToken)
+        //{
+        //    var reply = turnContext.Activity.CreateReply("What would you like to do Today ?");
+        //    reply.SuggestedActions = new SuggestedActions
+        //    {
+        //        Actions = new List<CardAction>
+        //        {
+        //            new CardAction { Title = "1. ", Type = ActionTypes.ImBack, Value = "1" },
+        //            new CardAction { Title = "2. ", Type = ActionTypes.ImBack, Value = "2" },
+        //            new CardAction { Title = "3. ", Type = ActionTypes.ImBack, Value = "3" },
+        //            new CardAction { Title = "4. Help", Type = ActionTypes.ImBack, Value = "4" },
+        //        }
+        //    };
+
+        //    await turnContext.SendActivityAsync(reply, cancellationToken);
+        //}
+
         //simple prompt Menu 
         private static async Task DisplayMainMenuAsync(ITurnContext turnContext, CancellationToken cancellationToken)
         {
-            var reply = turnContext.Activity.CreateReply("What would you like to do Today ?");
-            reply.SuggestedActions = new SuggestedActions
+
+
+            var heroCard = new HeroCard
             {
-                Actions = new List<CardAction>
+                Title = "BotFramework Test",
+                //Subtitle = "Microsoft Bot Framework",
+                Text = "Build smart Bot" ,
+                Images = new List<CardImage> { new CardImage("https://insomea.tn/wp-content/uploads/2018/02/LogoINSOMEA.png") },
+                Buttons = new List<CardAction>
                 {
                     new CardAction { Title = "1. ", Type = ActionTypes.ImBack, Value = "1" },
                     new CardAction { Title = "2. ", Type = ActionTypes.ImBack, Value = "2" },
@@ -239,8 +262,39 @@ namespace BotEnvAchrafTest
                     new CardAction { Title = "4. Help", Type = ActionTypes.ImBack, Value = "4" },
                 }
             };
+            
+            var reply = turnContext.Activity.CreateReply("What would you like to do Today ?");
+            reply.Attachments=new List<Attachment>(){heroCard.ToAttachment()};
+            
+            //reply.SuggestedActions = new SuggestedActions
+            //{
+            //    Actions = new List<CardAction>
+            //    {
+            //        new CardAction { Title = "1. ", Type = ActionTypes.ImBack, Value = "1" },
+            //        new CardAction { Title = "2. ", Type = ActionTypes.ImBack, Value = "2" },
+            //        new CardAction { Title = "3. ", Type = ActionTypes.ImBack, Value = "3" },
+            //        new CardAction { Title = "4. Help", Type = ActionTypes.ImBack, Value = "4" },
+            //    }
+            //};
 
             await turnContext.SendActivityAsync(reply, cancellationToken);
+        }
+
+
+
+        public static HeroCard GetHeroCard()
+        {
+            var heroCard = new HeroCard
+            {
+                Title = "BotFramework Hero Card",
+                Subtitle = "Microsoft Bot Framework",
+                Text = "Build and connect intelligent bots to interact with your users naturally wherever they are," +
+                       " from text/sms to Skype, Slack, Office 365 mail and other popular services.",
+                Images = new List<CardImage> { new CardImage("https://sec.ch9.ms/ch9/7ff5/e07cfef0-aa3b-40bb-9baa-7c9ef8ff7ff5/buildreactionbotframework_960.jpg") },
+                Buttons = new List<CardAction> { new CardAction(ActionTypes.OpenUrl, "Get Started", value: "https://docs.microsoft.com/bot-framework") },
+            };
+
+            return heroCard;
         }
 
 
