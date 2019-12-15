@@ -33,18 +33,13 @@ namespace BotEnvAchrafTest
         public async Task OnTurnAsync(ITurnContext turnContext, CancellationToken cancellationToken = default)
         {
 
-
-
-
             if (turnContext.Activity.MembersAdded != null)
             {
-                await SendWelcomeMessagePrivateAsync(turnContext, cancellationToken);
+                await SendWelcomeMessageAsync(turnContext, cancellationToken);
             }
 
             else
             {
-
-
 
                 var ResponsefromUser = turnContext.Activity.Text.ToLower();
                 //  await turnContext.SendActivityAsync($"{turnContext.Activity.Type} event detected");
@@ -52,7 +47,6 @@ namespace BotEnvAchrafTest
                 if (turnContext.Activity.Type == ActivityTypes.Message)
 
                 {
-
 
                     switch (ResponsefromUser)
                     {
@@ -73,13 +67,10 @@ namespace BotEnvAchrafTest
 
                     }
 
-
                 }
 
 
-
             }
-
 
 
         }
