@@ -7,6 +7,6 @@ namespace BotEnvAchrafTest
 {
     public class UserSelections
     {
-        public string StreamerName { get; set; }
+        public string UserName { get; set; }
     }
 }

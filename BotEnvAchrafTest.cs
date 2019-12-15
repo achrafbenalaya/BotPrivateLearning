@@ -23,55 +23,128 @@ namespace BotEnvAchrafTest
         private readonly ILogger _logger;
         private DialogSet _dialogs;
 
-
         //just a welcome Msg
         private const string WelcomeMessage = @"Welcome to the ChatBox.  This bot can help you find out about   live coding streams on Twitch!";
 
 
 
+        public EmptyBot(ConversationState conversationState, UserState userState,
+            ILoggerFactory loggerFactory)
+        {
+
+            if (conversationState == null)
+            {
+                throw new System.ArgumentNullException(nameof(conversationState));
+            }
+
+            if (loggerFactory == null)
+            {
+                throw new System.ArgumentNullException(nameof(loggerFactory));
+            }
+
+            _userState = userState;
+            _converationState = conversationState;
+            ConversationDialogState = _converationState.CreateProperty<DialogState>($"{nameof(EmptyBot)}.ConversationDialogState");
+            UserSelectionsState = _converationState.CreateProperty<UserSelections>($"{nameof(EmptyBot)}.UserSelectionsState");
+
+            _logger = loggerFactory.CreateLogger<EmptyBot>();
+            _logger.LogTrace("Turn start.");
+
+            //new dialog
+            _dialogs = new DialogSet(ConversationDialogState);
+
+            var dummySteps = new WaterfallStep[]
+            {
+                DummyStepAsync,
+            };
+
+            var whenNextSteps = new WaterfallStep[]
+            {
+                GetNameStepAsync,
+                GetUserInfoStepAsync
+            };
+
+
+            _dialogs.Add(new WaterfallDialog("dummy", dummySteps));
+            _dialogs.Add(new WaterfallDialog("whenNextIntent", whenNextSteps));
+            _dialogs.Add(new TextPrompt("User-name"));
+
+        }
+
+      
+
 
         public async Task OnTurnAsync(ITurnContext turnContext, CancellationToken cancellationToken = default)
         {
-
-            if (turnContext.Activity.MembersAdded != null)
-            {
-                await SendWelcomeMessageAsync(turnContext, cancellationToken);
-            }
-
-            else
+            if (turnContext.Activity.Type == ActivityTypes.Message)
             {
 
-                var ResponsefromUser = turnContext.Activity.Text.ToLower();
-                //  await turnContext.SendActivityAsync($"{turnContext.Activity.Type} event detected");
+                var dialogContext = await _dialogs.CreateContextAsync(turnContext, cancellationToken);
+                var results = await dialogContext.ContinueDialogAsync(cancellationToken);
 
-                if (turnContext.Activity.Type == ActivityTypes.Message)
+                var channelData = JObject.Parse(turnContext.Activity.ChannelData.ToString());
 
+                var userChoice = turnContext.Activity.Text;
+                var responseMessage = $"You chose: '{turnContext.Activity.Text}'\n";
+
+                switch (results.Status)
                 {
+                    case DialogTurnStatus.Empty:
 
-                    switch (ResponsefromUser)
-                    {
+                        if (!string.IsNullOrWhiteSpace(userChoice))
+                        {
+                            switch (userChoice)
+                            {
+                                case "1":
+                                    await dialogContext.BeginDialogAsync("dummy", null, cancellationToken);
+                                    break;
+                                case "2":
+                                    await dialogContext.BeginDialogAsync("whenNextIntent", null, cancellationToken);
+                                    break;
+                                case "3":
+                                    await dialogContext.BeginDialogAsync("dummy", null, cancellationToken);
+                                    break;
+                                case "4":
+                                    await dialogContext.BeginDialogAsync("dummy", null, cancellationToken);
+                                    break;
+                                default:
+                                    await turnContext.SendActivityAsync("Please select a menu option");
+                                    await DisplayMainMenuAsync(turnContext, cancellationToken);
+                                    break;
+                            }
+                        }
 
-                        case "a":
-                            await turnContext.SendActivityAsync($"Hi there! this Is A", cancellationToken: cancellationToken);
+                        break;
 
-                            break;
-                        case "b":
-                            await turnContext.SendActivityAsync($"Hi there! this Is B", cancellationToken: cancellationToken);
-                            break;
-                        case "c":
-                            await turnContext.SendActivityAsync($"Hi there! this Is C", cancellationToken: cancellationToken);
-                            break;
-                        default:
-                            await turnContext.SendActivityAsync($"Hi there! this Is test ignore", cancellationToken: cancellationToken);
-                            break;
+                    case DialogTurnStatus.Cancelled:
+                        await DisplayMainMenuAsync(turnContext, cancellationToken);
+                        break;
+                    case DialogTurnStatus.Waiting:
+                        await dialogContext.ContinueDialogAsync(cancellationToken);
+                        break;
+                    case DialogTurnStatus.Complete:
+                        await _userState.SaveChangesAsync(turnContext, false, cancellationToken);
 
-                    }
-
+                        await DisplayMainMenuAsync(turnContext, cancellationToken);
+                        break;
                 }
 
-
+                // Save the new turn count into the conversation state.
+                await _converationState.SaveChangesAsync(turnContext);
+                await _userState.SaveChangesAsync(turnContext, false, cancellationToken);
+                // var userSelections = await UserSelectionsState.GetAsync(turnContext, () => new UserSelections(), cancellationToken);
             }
-
+            else if (turnContext.Activity.Type == ActivityTypes.ConversationUpdate)
+            {
+                if (turnContext.Activity.MembersAdded != null)
+                {
+                    await SendWelcomeMessageAsync(turnContext, cancellationToken);
+                }
+            }
+            else
+            {
+                await turnContext.SendActivityAsync($"{turnContext.Activity.Type} event detected");
+            }
 
         }
 
@@ -101,18 +174,74 @@ namespace BotEnvAchrafTest
                     // Not the bot!
                     await turnContext.SendActivityAsync($"Hi there! {WelcomeMessage}",
                         cancellationToken: cancellationToken);
-                    //  await DisplayMainMenuAsync(turnContext, cancellationToken);
+                    await DisplayMainMenuAsync(turnContext, cancellationToken);
                 }
             }
         }
 
 
 
+        //get name
+        private async Task<DialogTurnResult> GetNameStepAsync(WaterfallStepContext stepContext, CancellationToken cancellationToken)
+        {
+            var userSelections = await UserSelectionsState.GetAsync(stepContext.Context, () => new UserSelections(), cancellationToken);
+            await UserSelectionsState.SetAsync(stepContext.Context, userSelections, cancellationToken);
+
+            return await stepContext.PromptAsync("User-name", new PromptOptions
+                {
+                    Prompt = MessageFactory.Text("Please enter your Name")
+                },
+                cancellationToken);
+        }
 
 
 
 
 
+        //GetUserSelection
+        private async Task<DialogTurnResult> GetUserInfoStepAsync(WaterfallStepContext stepContext, CancellationToken cancellationToken)
+        {
+            var userSelections = await UserSelectionsState.GetAsync(stepContext.Context, () => new UserSelections(), cancellationToken);
+            userSelections.UserName = (string)stepContext.Result;
+
+            // ToDo: get the data from GraphQL endpoint
+
+            await stepContext.Context.SendActivityAsync(MessageFactory.Text($"You selected {userSelections.UserName}"),
+                cancellationToken);
+
+            return await stepContext.EndDialogAsync(cancellationToken: cancellationToken);
+        }
+
+
+
+
+        //just a step to show user selection
+        private async Task<DialogTurnResult> DummyStepAsync(WaterfallStepContext stepContext, CancellationToken cancellationToken)
+        {
+            var selection = stepContext.Context.Activity.Text;
+            await stepContext.Context.SendActivityAsync(MessageFactory.Text($"You selected {selection}"), cancellationToken);
+            return await stepContext.EndDialogAsync(cancellationToken: cancellationToken);
+        }
+
+
+
+        //simple prompt Menu 
+        private static async Task DisplayMainMenuAsync(ITurnContext turnContext, CancellationToken cancellationToken)
+        {
+            var reply = turnContext.Activity.CreateReply("What would you like to do Today ?");
+            reply.SuggestedActions = new SuggestedActions
+            {
+                Actions = new List<CardAction>
+                {
+                    new CardAction { Title = "1. ", Type = ActionTypes.ImBack, Value = "1" },
+                    new CardAction { Title = "2. ", Type = ActionTypes.ImBack, Value = "2" },
+                    new CardAction { Title = "3. ", Type = ActionTypes.ImBack, Value = "3" },
+                    new CardAction { Title = "4. Help", Type = ActionTypes.ImBack, Value = "4" },
+                }
+            };
+
+            await turnContext.SendActivityAsync(reply, cancellationToken);
+        }
 
 
 

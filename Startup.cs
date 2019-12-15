@@ -30,6 +30,19 @@ namespace BotEnvAchrafTest
             // Create the Bot Framework Adapter with error handling enabled.
             services.AddSingleton<IBotFrameworkHttpAdapter, AdapterWithErrorHandler>();
 
+
+
+            // Memory Storage is for local bot debugging only.
+            IStorage dataStore = new MemoryStorage();
+
+            // Create and add conversation state.
+            var conversationState = new ConversationState(dataStore);
+            var userState = new UserState(dataStore);
+
+            services.AddSingleton(conversationState);
+            services.AddSingleton(userState);
+
+
             // Create the bot as a transient. In this case the ASP Controller is expecting an IBot.
             services.AddTransient<IBot, EmptyBot>();
         }
