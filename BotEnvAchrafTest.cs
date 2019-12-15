@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using BotEnvAchrafTest.Dialogs;
 using Microsoft.Bot.Builder;
 using Microsoft.Bot.Builder.Dialogs;
 using Microsoft.Bot.Schema;
@@ -58,16 +59,11 @@ namespace BotEnvAchrafTest
                 DummyStepAsync,
             };
 
-            var whenNextSteps = new WaterfallStep[]
-            {
-                GetNameStepAsync,
-                GetUserInfoStepAsync
-            };
 
-
+            _dialogs.Add(new WhenNextDialog("whenNextIntent", UserSelectionsState));
             _dialogs.Add(new WaterfallDialog("dummy", dummySteps));
-            _dialogs.Add(new WaterfallDialog("whenNextIntent", whenNextSteps));
-            _dialogs.Add(new TextPrompt("User-name"));
+
+            //_dialogs.Add(new TextPrompt("User-name"));
 
         }
 
@@ -181,36 +177,6 @@ namespace BotEnvAchrafTest
 
 
 
-        //get name
-        private async Task<DialogTurnResult> GetNameStepAsync(WaterfallStepContext stepContext, CancellationToken cancellationToken)
-        {
-            var userSelections = await UserSelectionsState.GetAsync(stepContext.Context, () => new UserSelections(), cancellationToken);
-            await UserSelectionsState.SetAsync(stepContext.Context, userSelections, cancellationToken);
-
-            return await stepContext.PromptAsync("User-name", new PromptOptions
-                {
-                    Prompt = MessageFactory.Text("Please enter your Name")
-                },
-                cancellationToken);
-        }
-
-
-
-
-
-        //GetUserSelection
-        private async Task<DialogTurnResult> GetUserInfoStepAsync(WaterfallStepContext stepContext, CancellationToken cancellationToken)
-        {
-            var userSelections = await UserSelectionsState.GetAsync(stepContext.Context, () => new UserSelections(), cancellationToken);
-            userSelections.UserName = (string)stepContext.Result;
-
-            // ToDo: get the data from GraphQL endpoint
-
-            await stepContext.Context.SendActivityAsync(MessageFactory.Text($"You selected {userSelections.UserName}"),
-                cancellationToken);
-
-            return await stepContext.EndDialogAsync(cancellationToken: cancellationToken);
-        }
 
 
 
@@ -256,10 +222,10 @@ namespace BotEnvAchrafTest
                 Images = new List<CardImage> { new CardImage("https://insomea.tn/wp-content/uploads/2018/02/LogoINSOMEA.png") },
                 Buttons = new List<CardAction>
                 {
-                    new CardAction { Title = "1. ", Type = ActionTypes.ImBack, Value = "1" },
-                    new CardAction { Title = "2. ", Type = ActionTypes.ImBack, Value = "2" },
-                    new CardAction { Title = "3. ", Type = ActionTypes.ImBack, Value = "3" },
-                    new CardAction { Title = "4. Help", Type = ActionTypes.ImBack, Value = "4" },
+                    new CardAction { Title = "Home. ", Type = ActionTypes.ImBack, Value = "1" },
+                    new CardAction { Title = "Solutions. ", Type = ActionTypes.ImBack, Value = "2" },
+                    new CardAction { Title = "Services ", Type = ActionTypes.ImBack, Value = "3" },
+                    new CardAction { Title = "4. Help/contactUs", Type = ActionTypes.ImBack, Value = "4" },
                 }
             };
             
